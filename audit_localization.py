@@ -88,12 +88,14 @@ class Finding:
     finding_id: str
     route: str
     module_name: str
+    page_url: str
     element_selector: str
     text_observed: str
     classification: str
     expected_indonesian: str
     quality_note: str
     screenshot_path: str
+    fullpage_screenshot_path: str = ""
 
 
 def find_system_chromium() -> str | None:
@@ -208,7 +210,15 @@ def classify_string(text: str) -> tuple[str, str, str]:
         return "technical-term", "", ""
 
     # Date string
-    if re.match(r"^\d{4}[-/]\d{2}[-/]\d{2}", text_clean) or re.match(r"^\d{2}[-/]\d{2}[-/]\d{4}", text_clean):
+    if re.match(r"^\d{4}[-/]\d{2}[-/]\d{2}", text_clean) or re.match(r"^\d{2}[-/]\d{2}[-/]\d{4}", text_clean) or re.match(r"^\d{1,2}/\d{1,2}/\d{4}", text_clean):
+        return "technical-term", "", ""
+
+    # Patient IDs / Study Codes (e.g., 20-LST-20B_Thorax_PA, 20-LST-20B, etc.)
+    if re.search(r"^\d{2}-[A-Z0-9_\-]+", text_clean) or re.search(r"^\d{2}-[A-Z]+", text_clean):
+        return "technical-term", "", ""
+
+    # DICOM Technique overlays & Measurements (e.g., NaNkVp, mAs, dGy, WW: WL:, mm, cm)
+    if re.search(r"\b(NaNkVp|dGy|mAs)\b|WW:\s*\d+|WL:\s*\d+|\d+mm|\d+cm", text_clean):
         return "technical-term", "", ""
 
     # Technical terms or upper-case codes
@@ -253,7 +263,9 @@ def classify_string(text: str) -> tuple[str, str, str]:
 
 def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_path: str | Path) -> None:
     wb = openpyxl.Workbook()
-    
+    out_file = Path(output_path)
+    base_dir = out_file.parent
+
     # Sheet 1: Findings
     ws_findings = wb.active
     ws_findings.title = "Findings"
@@ -262,27 +274,96 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         "finding_id",
         "route",
         "module_name",
+        "page_url",
         "element_selector",
         "text_observed",
         "classification",
         "expected_indonesian",
         "quality_note",
         "screenshot_path",
+        "screenshot_image",
+        "fullpage_screenshot_path",
+        "fullpage_screenshot_image",
     ]
     ws_findings.append(findings_headers)
+
+    ws_findings.column_dimensions["A"].width = 18  # finding_id
+    ws_findings.column_dimensions["B"].width = 15  # route
+    ws_findings.column_dimensions["C"].width = 22  # module_name
+    ws_findings.column_dimensions["D"].width = 45  # page_url
+    ws_findings.column_dimensions["E"].width = 25  # element_selector
+    ws_findings.column_dimensions["F"].width = 30  # text_observed
+    ws_findings.column_dimensions["G"].width = 16  # classification
+    ws_findings.column_dimensions["H"].width = 22  # expected_indonesian
+    ws_findings.column_dimensions["I"].width = 30  # quality_note
+    ws_findings.column_dimensions["J"].width = 25  # screenshot_path
+    ws_findings.column_dimensions["K"].width = 22  # screenshot_image
+    ws_findings.column_dimensions["L"].width = 28  # fullpage_screenshot_path
+    ws_findings.column_dimensions["M"].width = 22  # fullpage_screenshot_image
     
-    for f in findings:
+    for row_idx, f in enumerate(findings, start=2):
+        rel_path = f.screenshot_path
+        link_formula = f'=HYPERLINK("{rel_path}", "View Screenshot")' if rel_path else ""
+        
+        full_rel_path = f.fullpage_screenshot_path
+        full_link_formula = f'=HYPERLINK("{full_rel_path}", "View Full Page")' if full_rel_path else ""
+
         ws_findings.append([
             f.finding_id,
             f.route,
             f.module_name,
+            f.page_url,
             f.element_selector,
             f.text_observed,
             f.classification,
             f.expected_indonesian,
             f.quality_note,
-            f.screenshot_path,
+            link_formula if rel_path else "",
+            "", # element image placeholder column K
+            full_link_formula if full_rel_path else "",
+            "", # fullpage image placeholder column M
         ])
+
+        from openpyxl.drawing.image import Image as OpenPyXLImage
+
+        # Embed element thumbnail image if screenshot file exists
+        if rel_path:
+            full_img_path = base_dir / rel_path
+            if full_img_path.is_file():
+                try:
+                    img = OpenPyXLImage(str(full_img_path))
+                    max_size = 120
+                    if img.width > max_size or img.height > max_size:
+                        scale = min(max_size / img.width, max_size / img.height)
+                        img.width = int(img.width * scale)
+                        img.height = int(img.height * scale)
+
+                    img.anchor = f"K{row_idx}"
+                    ws_findings.add_image(img)
+                    ws_findings.row_dimensions[row_idx].height = max(50, int(img.height * 0.75))
+                except Exception:
+                    pass
+
+        # Embed fullpage thumbnail image if fullpage screenshot file exists
+        if full_rel_path:
+            full_page_img_path = base_dir / full_rel_path
+            if full_page_img_path.is_file():
+                try:
+                    fp_img = OpenPyXLImage(str(full_page_img_path))
+                    fp_max_size = 120
+                    if fp_img.width > fp_max_size or fp_img.height > fp_max_size:
+                        fp_scale = min(fp_max_size / fp_img.width, fp_max_size / fp_img.height)
+                        fp_img.width = int(fp_img.width * fp_scale)
+                        fp_img.height = int(fp_img.height * fp_scale)
+
+                    fp_img.anchor = f"M{row_idx}"
+                    ws_findings.add_image(fp_img)
+                    ws_findings.row_dimensions[row_idx].height = max(
+                        ws_findings.row_dimensions[row_idx].height or 50,
+                        int(fp_img.height * 0.75)
+                    )
+                except Exception:
+                    pass
 
     # Sheet 2: Summary
     ws_summary = wb.create_sheet(title="Summary")
@@ -306,8 +387,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         summary.get("strings_inspected", 0),
         summary.get("findings_total", 0),
         summary.get("findings_not_indonesian", 0),
-        summary.get("findings_mixed", 0),
-        summary.get("findings_quality_issue", 0),
+    summary.get("findings_quality_issue", 0),
         summary.get("findings_uncertain", 0),
         summary.get("viewer_modal_visited", False),
     ])
@@ -478,6 +558,7 @@ class LocalizationAuditor:
             module_name = self.derive_module_name(route_id)
 
         self.page.wait_for_timeout(1000)
+        current_url = self.page.url
 
         elements_data = self.page.evaluate(
             """() => {
@@ -548,6 +629,16 @@ class LocalizationAuditor:
 
         self.screenshots_dir.mkdir(parents=True, exist_ok=True)
 
+        # Capture full-page screenshot for this route
+        fullpage_rel_path = ""
+        fullpage_filename = f"fullpage_{route_id}.png"
+        fullpage_full_path = self.screenshots_dir / fullpage_filename
+        try:
+            self.page.screenshot(path=str(fullpage_full_path), full_page=True)
+            fullpage_rel_path = f"{self.screenshots_dir.name}/{fullpage_filename}"
+        except Exception:
+            fullpage_rel_path = ""
+
         for item in elements_data:
             text = item.get("text", "").strip()
             selector = item.get("selector", "")
@@ -588,12 +679,14 @@ class LocalizationAuditor:
                 finding_id=finding_id,
                 route=route_id,
                 module_name=module_name,
+                page_url=current_url,
                 element_selector=selector,
                 text_observed=text,
                 classification=classification,
                 expected_indonesian=expected,
                 quality_note=quality_note,
                 screenshot_path=screenshot_rel_path,
+                fullpage_screenshot_path=fullpage_rel_path,
             ))
 
     def discover_and_audit_navigation(self) -> None:
@@ -674,8 +767,18 @@ class LocalizationAuditor:
         self.extract_and_classify_route("study-list", module_name="Study List (Chest DR)")
         self.discover_and_audit_navigation()
 
-        # 4. Viewer modal route (click first visible study row)
+        # 4. Standalone DR Viewer page route
+        dr_viewer_url = f"{self.base_url}/view/dr/index.html/viewer?action=viewer&type=CR&sid=58&pacs=fei&aiCalcId=50"
         try:
+            self.page.goto(dr_viewer_url, wait_until="domcontentloaded")
+            self.page.wait_for_timeout(2000)
+            self.extract_and_classify_route("dr-viewer-standalone", module_name="Chest DR Intelligent Analysis")
+        except Exception as exc:
+            print(f"[dr-viewer-standalone] Failed to load standalone viewer page: {exc}")
+
+        # 5. Viewer modal route (click first visible study row)
+        try:
+            self.page.goto(f"{self.base_url}/{DEFAULT_LIST_HASH}", wait_until="domcontentloaded")
             self.page.wait_for_timeout(1000)
             rows = self.page.locator("tbody tr")
             row_count = 0
@@ -719,8 +822,8 @@ def main() -> int:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help="Base URL of AI-PACS")
     parser.add_argument("--credentials", default="credential.txt", help="Credentials file path")
     parser.add_argument("--storage-state", default="auth-state.json", help="Playwright storage state file")
-    parser.add_argument("--output", default="localization_report.xlsx", help="Output Excel report path")
-    parser.add_argument("--screenshots-dir", default="screenshots", help="Directory for evidence screenshots")
+    parser.add_argument("--output", default="reports/localization_report.xlsx", help="Output Excel report path")
+    parser.add_argument("--screenshots-dir", default="reports/screenshots", help="Directory for evidence screenshots")
     parser.add_argument("--headed", action="store_true", help="Run browser in headed mode")
     parser.add_argument("--timeout-ms", type=int, default=30000, help="Default Playwright timeout in ms")
     parser.add_argument("--probe-only", action="store_true", help="Probe PACS reachability only and exit")

@@ -51,10 +51,10 @@ OCR is not the default evidence source. DOM text, accessibility text, attributes
 ## Current repository state
 
 **Current state:**  
-`MVP-02 accepted`
+`MVP-02 enhanced with full-page screenshots & verified`
 
 **Relevant summary:**  
-As of 2026-08-11, MVP-02 full-surface audit crawler is implemented and accepted. `audit_localization.py` dynamically discovers menu navigation, sub-tabs, tooltips, dialogs, and categorizes findings by module (`module_name`). The live audit run inspected 228 strings across 4 modules (`Authentication`, `Doctor Portal`, `Study List (Chest DR)`, `Viewer Window`) and identified 61 UI localization findings exported to `localization_report.xlsx`. All offline unit tests in `test_audit_localization.py` pass.
+As of 2026-08-11, `audit_localization.py` captures both element-level cropped screenshots and complete full-page view screenshots (`full_page=True`) for all 5 audited routes. In `reports/localization_report.xlsx`, Column L provides `=HYPERLINK("screenshots/fullpage_...", "View Full Page")` relative links and Column M embeds **149 image thumbnails** directly into Excel cells. All 6 unit tests pass.
 
 ## Intended authority map
 

@@ -139,12 +139,14 @@ class TestAuditLocalizationOffline(unittest.TestCase):
                 finding_id="1a2b3c4d5e6f7g8h",
                 route="login",
                 module_name="Authentication",
+                page_url="http://124.225.183.175:8361/#/login",
                 element_selector="button.login-btn",
                 text_observed="Login",
                 classification="not-indonesian",
                 expected_indonesian="Masuk",
                 quality_note="",
                 screenshot_path="screenshots/login_001_1a2b3c4d.png",
+                fullpage_screenshot_path="screenshots/fullpage_login.png",
             )
         ]
         summary = {
@@ -175,12 +177,16 @@ class TestAuditLocalizationOffline(unittest.TestCase):
                 "finding_id",
                 "route",
                 "module_name",
+                "page_url",
                 "element_selector",
                 "text_observed",
                 "classification",
                 "expected_indonesian",
                 "quality_note",
                 "screenshot_path",
+                "screenshot_image",
+                "fullpage_screenshot_path",
+                "fullpage_screenshot_image",
             ]
             self.assertEqual(headers_f, expected_f_headers)
 
@@ -188,9 +194,10 @@ class TestAuditLocalizationOffline(unittest.TestCase):
             self.assertEqual(row2_f[0], "1a2b3c4d5e6f7g8h")
             self.assertEqual(row2_f[1], "login")
             self.assertEqual(row2_f[2], "Authentication")
-            self.assertEqual(row2_f[4], "Login")
-            self.assertEqual(row2_f[5], "not-indonesian")
-            self.assertEqual(row2_f[6], "Masuk")
+            self.assertEqual(row2_f[3], "http://124.225.183.175:8361/#/login")
+            self.assertEqual(row2_f[5], "Login")
+            self.assertEqual(row2_f[6], "not-indonesian")
+            self.assertEqual(row2_f[7], "Masuk")
 
             # Verify Summary Sheet
             ws_s = wb["Summary"]
