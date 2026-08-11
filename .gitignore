@@ -1,0 +1,6 @@
+.env
+__pycache__
+reports/
+diagnostics/
+storage.json
+auth-state.json
