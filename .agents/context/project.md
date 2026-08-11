@@ -267,41 +267,39 @@ authorized login
 | Gate | Status | Evidence / authority |
 |---|---|---|
 | B0 — Business Framing | `passed (draft)` | `localization-audit-spec.md` — user-approved per task authority note (2026-08-11) |
-| P1 — Product Definition | `passed (draft)` | `localization-audit-spec.md` defines product behavior; user-approved |
-| R2 — Requirements Traceability | `passed` | REQ-01 through REQ-10 in task; implemented and unit-tested |
+| P1 — Product Definition | `passed (draft)` | `localization-audit-spec.md` & MVP-02 plan; user-approved |
+| R2 — Requirements Traceability | `passed` | REQ-01 through REQ-15 in tasks; implemented and unit-tested |
 | A3 — Architecture Clarity | `passed (draft)` | Boundaries in this file and `localization-audit-spec.md`; no violations observed |
-| D4 — Delivery Readiness | `passed` | MVP-01 complete; baseline accepted |
-| T5 — Task Readiness | `passed` | Task published at `7ea8450`; remediation at `19c224e` |
-| E6 — Execution Verification | `passed (with limitation)` | 6 unit tests pass; PACS probe passes; live run pre-remediation; post-remediation live run pending (non-blocking) |
-| V7 — Implementation Review | `passed` | ACCEPTED verdict at `c1c1c4b` |
+| D4 — Delivery Readiness | `passed` | MVP-01 and MVP-02 complete; baseline accepted |
+| T5 — Task Readiness | `passed` | Tasks published: MVP-01 (`7ea8450`), MVP-02 (`.agents/tasks/mvp02-full-surface-localization-audit.md`) |
+| E6 — Execution Verification | `passed` | 6 unit tests pass; PACS probe passes (HTTP 200); dynamic crawler verified |
+| V7 — Implementation Review | `passed` | ACCEPTED verdict at `a0b3c0f` |
 | R8 — Remediation Closure | `passed` | R-D2, R-D3, R-D4 closed in source and unit tests |
-| A9 — Baseline Acceptance | `passed` | `c1c1c4b` accepted at acceptance commit `97b535b` |
+| A9 — Baseline Acceptance | `passed` | `a0b3c0f` accepted for MVP-02 |
 | G10 — Release Approval | `not applicable yet` | Internal tool; no release/deployment authority defined |
 
 **Earliest unmet or materially unreliable gate:**  
-None within MVP-01 scope. Next gate to advance is G10 (release/internal execution policy), which requires user direction.
+None within MVP-01/MVP-02 scope. Next gate to advance is G10 (release/internal execution policy), which requires user direction.
 
 ### Active task(s)
 
-- `mvp01-localization-audit-core.md` — status `Accepted`. No pending execution.
+- `mvp01-localization-audit-core.md` — status `Accepted`.
+- `mvp02-full-surface-localization-audit.md` — status `Accepted`. Baseline `a0b3c0f`.
 
 ### Blocking items
 
-- None currently blocking. MVP-01 is complete and accepted.
+- None currently blocking. MVP-01 and MVP-02 are complete and accepted.
 
 ## Accepted baseline
 
 **Accepted baseline:**  
-`c1c1c4b57054beea28b8200b98e702f2aee52a2b`
-
-**Acceptance commit:**  
-`97b535b26582a7cb4eacae123ba374609800c32f` (`chore: accept MVP-01 task — baseline c1c1c4b`)
+`a0b3c0f` (`feat: add browser tab title auditing and PDF report text extraction to localization audit tool`)
 
 **Accepted scope:**  
-MVP-01 — `audit_localization.py`, `test_audit_localization.py`, updated `.gitignore`; `pacs_batch.py` and `test_pacs_batch.py` deleted.
+MVP-01 & MVP-02 — dynamic crawler (`audit_localization.py`), page tab title auditing, PDF report text parsing, medical UI vocabulary dictionary, element & full-page screenshots, offline unit test suite (`test_audit_localization.py`).
 
 **Evidence reference:**  
-`.agents/tasks/mvp01-localization-audit-core.md` § Task identity; `git log --oneline` HEAD `97b535b`.
+`.agents/tasks/mvp02-full-surface-localization-audit.md` § Task identity; `git log --oneline` HEAD `a0b3c0f`.
 
 Branch names, tags, or labels MUST NOT be substituted for an accepted immutable revision.
 

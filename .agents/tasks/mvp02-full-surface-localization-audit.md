@@ -21,6 +21,12 @@ authority_note: >
 
 **Task contract state:** `Accepted`
 
+**Implementation revision reviewed:** `a0b3c0f`
+
+**Accepted implementation revision:** `a0b3c0f`
+
+**Accepted baseline (post-review):** `a0b3c0f`
+
 **Delivery objective:** MVP-02 — Full-Surface Indonesian Localization Audit Coverage
 
 **Owner:** Repository owner / Madeena Software
@@ -29,15 +35,15 @@ authority_note: >
 
 ## Delivery context
 
-The baseline MVP-01 audit tool covered only 4 hardcoded routes (`login`, `doctor`, `study-list`, `viewer-modal`). Under MVP-02, the tool will be expanded into a comprehensive localization crawler capable of automatically traversing all accessible navigation menus, sidebar sub-sections, modality tables (`/#/userTable/*`), sub-tabs, filter dropdowns, and informational dialog overlays. This will produce a complete UI text localization report categorized by functional module.
+The baseline MVP-01 audit tool covered only 4 hardcoded routes (`login`, `doctor`, `study-list`, `viewer-modal`). Under MVP-02, the tool was expanded into a comprehensive localization crawler capable of automatically traversing all accessible navigation menus, sidebar sub-sections, modality tables (`/#/userTable/*`), sub-tabs, filter dropdowns, and informational dialog overlays, browser tab titles, and PDF diagnostic reports.
 
 ---
 
 ## Baseline and task revision
 
-**Implementation baseline:** `c1c1c4b57054beea28b8200b98e702f2aee52a2b` (HEAD commit `97b535b26582a7cb4eacae123ba374609800c32f`)
+**Implementation baseline:** `c1c1c4b57054beea28b8200b98e702f2aee52a2b` (accepted commit `97b535b26582a7cb4eacae123ba374609800c32f`)
 
-**Task revision:** `.agents/tasks/mvp02-full-surface-localization-audit.md @ Draft`
+**Task revision:** `.agents/tasks/mvp02-full-surface-localization-audit.md @ a0b3c0f`
 
 ---
 
