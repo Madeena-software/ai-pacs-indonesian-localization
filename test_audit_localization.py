@@ -106,6 +106,21 @@ class TestAuditLocalizationOffline(unittest.TestCase):
         cls, exp, note = classify_string("Masuk")
         self.assertEqual(cls, "technical-term")
 
+    # --- Remediation AC-13 test cases ---
+
+    def test_classify_string_remediation(self) -> None:
+        """AC-13: Verify R-D3, R-D4 classification fixes."""
+
+        # R-D4: Insight must be a technical-term (product name)
+        cls, exp, note = classify_string("Insight")
+        self.assertEqual(cls, "technical-term", "'Insight' is a product name and must not be a finding")
+
+        # R-D3: Language must return expected_indonesian = "Bahasa"
+        cls, exp, note = classify_string("Language")
+        self.assertEqual(cls, "not-indonesian")
+        self.assertEqual(exp, "Bahasa")
+        self.assertEqual(note, "")
+
     def test_deduplication_keys(self) -> None:
         seen = set()
         key1 = ("login", "input#username", "Login")
@@ -187,6 +202,7 @@ class TestAuditLocalizationOffline(unittest.TestCase):
                 "findings_mixed",
                 "findings_quality_issue",
                 "findings_uncertain",
+                "viewer_modal_visited",
             ]
             self.assertEqual(headers_s, expected_s_headers)
 

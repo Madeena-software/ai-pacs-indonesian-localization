@@ -43,7 +43,9 @@ LOGIN_BUTTON_TEXTS = ("Login", "Sign in", "Log in", "Masuk", "登录", "登入")
 TECHNICAL_TERMS = {
     "AI", "PACS", "DICOM", "DR", "CR", "CT", "MRI", "JPEG", "PNG", "PDF",
     "ID", "Madeena", "UMI", "HTML", "URL", "JSON", "HTTP", "HTTPS", "GB", "MB", "KB",
-    "B-MODE", "2D", "3D", "4D"
+    "B-MODE", "2D", "3D", "4D",
+    # Product names — must not be translated
+    "Insight", "Insight ChestDR", "Insight QCDR",
 }
 
 KNOWN_TRANSLATIONS = {
@@ -67,6 +69,7 @@ KNOWN_TRANSLATIONS = {
     "Action": "Tindakan",
     "Detail": "Rincian",
     "Operation": "Operasi",
+    "Language": "Bahasa",
     "Download Report": "Unduh Laporan",
     "Generate Report": "Buat Laporan",
     "AI Report": "Laporan AI",
@@ -290,6 +293,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         "findings_mixed",
         "findings_quality_issue",
         "findings_uncertain",
+        "viewer_modal_visited",
     ]
     ws_summary.append(summary_headers)
     ws_summary.append([
@@ -302,6 +306,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         summary.get("findings_mixed", 0),
         summary.get("findings_quality_issue", 0),
         summary.get("findings_uncertain", 0),
+        summary.get("viewer_modal_visited", False),
     ])
 
     out = Path(output_path)
@@ -571,6 +576,7 @@ class LocalizationAuditor:
             ))
 
     def run_audit(self) -> None:
+        self.viewer_modal_visited = False
         self.login_if_needed()
 
         # 1. Login route
@@ -585,15 +591,44 @@ class LocalizationAuditor:
         self.page.goto(f"{self.base_url}/{DEFAULT_LIST_HASH}", wait_until="domcontentloaded")
         self.extract_and_classify_route("study-list")
 
-        # 4. Viewer modal route (click first study row if available)
+        # 4. Viewer modal route (click first visible study row)
         try:
-            row = self.page.locator("tbody tr").first
-            if row and row.is_visible():
-                row.click()
-                self.page.wait_for_timeout(1500)
-                self.extract_and_classify_route("viewer-modal")
-        except Exception:
-            pass
+            self.page.wait_for_timeout(1000)
+            rows = self.page.locator("tbody tr")
+            row_count = 0
+            try:
+                row_count = rows.count()
+            except Exception:
+                pass
+
+            visible_row = None
+            for i in range(min(row_count, 5)):
+                try:
+                    candidate = rows.nth(i)
+                    if candidate.is_visible():
+                        visible_row = candidate
+                        break
+                except Exception:
+                    continue
+
+            if visible_row is None:
+                print(
+                    "[viewer-modal] No visible study row found in study list "
+                    "— skipping viewer modal route."
+                )
+            else:
+                try:
+                    visible_row.click(timeout=10000)
+                    self.page.wait_for_timeout(1500)
+                    self.extract_and_classify_route("viewer-modal")
+                    self.viewer_modal_visited = True
+                except Exception as exc:
+                    print(
+                        f"[viewer-modal] Failed to open viewer modal: "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+        except Exception as outer_exc:
+            print(f"[viewer-modal] Unexpected error during row detection: {outer_exc}")
 
 
 def main() -> int:
@@ -665,6 +700,7 @@ def main() -> int:
         "findings_mixed": counts["mixed"],
         "findings_quality_issue": counts["quality-issue"],
         "findings_uncertain": counts["uncertain"],
+        "viewer_modal_visited": getattr(auditor, "viewer_modal_visited", False),
     }
 
     try:
