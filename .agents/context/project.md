@@ -273,9 +273,9 @@ authorized login
 | D4 — Delivery Readiness | `passed` | MVP-01 and MVP-02 complete; baseline accepted |
 | T5 — Task Readiness | `passed` | Tasks published: MVP-01 (`7ea8450`), MVP-02 (`.agents/tasks/mvp02-full-surface-localization-audit.md`) |
 | E6 — Execution Verification | `passed` | 6 unit tests pass; PACS probe passes (HTTP 200); dynamic crawler verified |
-| V7 — Implementation Review | `passed` | ACCEPTED verdict at `a0b3c0f` |
+| V7 — Implementation Review | `passed` | ACCEPTED verdict at `15f3e69ab1c71c9ef1447b2ce193be0f86dd113b` |
 | R8 — Remediation Closure | `passed` | R-D2, R-D3, R-D4 closed in source and unit tests |
-| A9 — Baseline Acceptance | `passed` | `a0b3c0f` accepted for MVP-02 |
+| A9 — Baseline Acceptance | `passed` | `15f3e69ab1c71c9ef1447b2ce193be0f86dd113b` accepted for MVP-02 |
 | G10 — Release Approval | `not applicable yet` | Internal tool; no release/deployment authority defined |
 
 **Earliest unmet or materially unreliable gate:**  
@@ -284,7 +284,7 @@ None within MVP-01/MVP-02 scope. Next gate to advance is G10 (release/internal e
 ### Active task(s)
 
 - `mvp01-localization-audit-core.md` — status `Accepted`.
-- `mvp02-full-surface-localization-audit.md` — status `Accepted`. Baseline `a0b3c0f`.
+- `mvp02-full-surface-localization-audit.md` — status `Accepted`. Baseline `15f3e69ab1c71c9ef1447b2ce193be0f86dd113b`.
 
 ### Blocking items
 
@@ -293,7 +293,7 @@ None within MVP-01/MVP-02 scope. Next gate to advance is G10 (release/internal e
 ## Accepted baseline
 
 **Accepted baseline:**  
-`a0b3c0f` (`feat: add browser tab title auditing and PDF report text extraction to localization audit tool`)
+`15f3e69ab1c71c9ef1447b2ce193be0f86dd113b` (`feat: expand Indonesian localization dictionary and update audit classification logic to provide descriptive translation notes`)
 
 **Accepted scope:**  
 MVP-01 & MVP-02 — dynamic crawler (`audit_localization.py`), page tab title auditing, PDF report text parsing, medical UI vocabulary dictionary, element & full-page screenshots, offline unit test suite (`test_audit_localization.py`).

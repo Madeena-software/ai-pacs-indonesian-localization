@@ -21,11 +21,11 @@ authority_note: >
 
 **Task contract state:** `Accepted`
 
-**Implementation revision reviewed:** `a0b3c0f`
+**Implementation revision reviewed:** `15f3e69ab1c71c9ef1447b2ce193be0f86dd113b`
 
-**Accepted implementation revision:** `a0b3c0f`
+**Accepted implementation revision:** `15f3e69ab1c71c9ef1447b2ce193be0f86dd113b`
 
-**Accepted baseline (post-review):** `a0b3c0f`
+**Accepted baseline (post-review):** `15f3e69ab1c71c9ef1447b2ce193be0f86dd113b`
 
 **Delivery objective:** MVP-02 — Full-Surface Indonesian Localization Audit Coverage
 
