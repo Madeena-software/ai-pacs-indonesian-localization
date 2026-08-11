@@ -2,7 +2,7 @@
 title: MVP-01 — Build Indonesian Localization Audit Tool (audit_localization.py)
 document_id: TASK-MVP01-LOC-AUDIT-001
 version: 1.0
-status: Validated/Published
+status: Remediation Required
 language: en-US
 last_updated: 2026-08-11
 authority_note: >
@@ -22,9 +22,12 @@ authority_note: >
 
 **Task contract state:** `Validated/Published`
 
-**Task revision:** `resolved when published`
-_(To be resolved by Planner on commit. Executor must confirm the exact governing commit SHA
-from `git log --oneline -1 .agents/tasks/mvp01-localization-audit-core.md` before beginning.)_
+**Task revision (original):** `.agents/tasks/mvp01-localization-audit-core.md @ 7ea8450`
+
+**Implementation revision reviewed:** `8e48d62`
+
+**Remediation task revision:** `resolved when republished`
+_(Executor must confirm from `git log --oneline -1 .agents/tasks/mvp01-localization-audit-core.md`.)_
 
 **Delivery objective:** MVP-01 — Indonesian localization audit baseline
 
@@ -313,3 +316,59 @@ All offline unit tests in `test_audit_localization.py` pass.
 `pacs_batch.py` and `test_pacs_batch.py` are deleted.
 
 `.gitignore` is updated.
+
+---
+
+## Remediation record (added 2026-08-11)
+
+### Review basis
+
+**Reviewed implementation:** `8e48d62` against governing task `7ea8450`.
+
+**Verdict:** REMEDIATION REQUIRED — three bounded findings within the same delivery objective.
+
+### Required corrections
+
+**R-D2 — Viewer modal route not visited**
+
+The live run produced only 3 routes in `routes_visited` (`login`, `doctor`, `study-list`).
+The `viewer-modal` route was silently skipped because the `try/except` block at `run_audit()`
+swallowed the failure with no diagnostic output. The viewer modal is part of the approved MVP-01
+navigation surface.
+
+Required fix:
+- In `run_audit()`, before calling `row.click()`, verify at least one `tbody tr` row is visible.
+- Log a clear warning to stdout if no clickable row is found (e.g. `"[viewer-modal] No study row available — skipping viewer modal route."`).
+- If a row is found and `.click()` raises an exception, log the error class and message.
+- Add `"viewer_modal_visited"` boolean to the Summary sheet row.
+- Add a corresponding unit test that the Summary dict includes the `viewer_modal_visited` key.
+
+**R-D4 — "Insight" wrongly classified `not-indonesian`**
+
+`"Insight"` is a product name (part of "Insight ChestDR" and "Insight QCDR" module names
+as observed in `auth-state.json`). It must be treated as a technical term / product name.
+
+Required fix:
+- Add `"Insight"` and `"Insight ChestDR"` and `"Insight QCDR"` to `TECHNICAL_TERMS` set.
+- Update the corresponding unit test to confirm `classify_string("Insight")` returns `"technical-term"`.
+
+**R-D3 — "Language" finding missing `expected_indonesian`**
+
+The `"Language"` string (language-switcher trigger on the login page) is classified `not-indonesian`
+but has no `expected_indonesian` suggestion.
+
+Required fix:
+- Add `"Language": "Bahasa"` to `KNOWN_TRANSLATIONS`.
+- Update the corresponding unit test to confirm `classify_string("Language")` returns
+  `("not-indonesian", "Bahasa", "")`.
+
+### Verification additions
+
+In addition to all original AC-01 through AC-12, the remediation must satisfy:
+
+| AC | Criterion |
+|---|---|
+| AC-13 | `python3 -m pytest test_audit_localization.py -v` passes all tests including new ones for R-D2, R-D4, R-D3 |
+| AC-14 | After a live run, `routes_visited` in Summary includes `viewer-modal` OR stdout contains a clear skip warning message |
+| AC-15 | `"Insight"` is not present in the Findings sheet `text_observed` column |
+| AC-16 | If `"Language"` appears in Findings, its `expected_indonesian` cell is `"Bahasa"` |
