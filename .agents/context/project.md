@@ -51,10 +51,10 @@ OCR is not the default evidence source. DOM text, accessibility text, attributes
 ## Current repository state
 
 **Current state:**  
-`MVP-02 enhanced with full-page screenshots & verified`
+`MVP-02 enhanced classification & full-page verified`
 
 **Relevant summary:**  
-As of 2026-08-11, `audit_localization.py` captures both element-level cropped screenshots and complete full-page view screenshots (`full_page=True`) for all 5 audited routes. In `reports/localization_report.xlsx`, Column L provides `=HYPERLINK("screenshots/fullpage_...", "View Full Page")` relative links and Column M embeds **149 image thumbnails** directly into Excel cells. All 6 unit tests pass.
+As of 2026-08-11, `audit_localization.py` includes a PACS medical UI vocabulary dictionary and English phrase classifier. The audit detected **46 untranslated English UI findings** (such as `Free Layout`, `Window Leveling`, `Lesion List`, `Imaging Findings`, `Show Foreign Objects`, etc.) across 5 routes and generated recommended Indonesian translations in `reports/localization_report.xlsx`. All 6 offline unit tests pass.
 
 ## Intended authority map
 

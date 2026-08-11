@@ -80,6 +80,44 @@ KNOWN_TRANSLATIONS = {
     "Name": "Nama",
     "Date": "Tanggal",
     "Department": "Departemen",
+
+    # Viewer & Medical UI Terms
+    "Free Layout": "Tata Letak Bebas",
+    "Window Leveling": "Leveling Jendela (W/L)",
+    "Move": "Pindah",
+    "Zoom": "Perbesar",
+    "Invert": "Inversi Warna",
+    "Rotate": "Putar",
+    "Magnifier": "Kaca Pembesar",
+    "Spotlight": "Sorot",
+    "Length": "Panjang",
+    "Lesion Contouring": "Kontur Lesi",
+    "More": "Lainnya",
+    "Lesion List": "Daftar Lesi",
+    "Add": "Tambah",
+    "LUNG": "PARU",
+    "MEDIASTINUM": "MEDIASTINUM",
+    "PLEURA": "PLEURA",
+    "RIB": "TULANG RUSUK",
+    "Cardiac Shadow": "Bayangan Jantung",
+    "Abnormal": "Abnormal",
+    "Cardiothoracic Ratio": "Rasio Kardiotoraks",
+    "Imaging Report": "Laporan Pemeriksaan",
+    "Imaging Findings": "Temuan Pemeriksaan",
+    "Imaging Opinion": "Opini Pemeriksaan",
+    "Corner Information": "Informasi Sudut",
+    "Lesion Marking": "Penandaan Lesi",
+    "Scale": "Skala",
+    "Show Foreign Objects": "Tampilkan Benda Asing",
+    "Original Image": "Gambar Asli",
+    "Submit Results": "Kirim Hasil",
+    "Copy": "Salin",
+    "Previous": "Sebelumnya",
+    "Next": "Selanjutnya",
+    "Start date": "Tanggal Mulai",
+    "End date": "Tanggal Selesai",
+    "All": "Semua",
+    "Filter": "Filter",
 }
 
 
@@ -240,20 +278,29 @@ def classify_string(text: str) -> tuple[str, str, str]:
         expected = KNOWN_TRANSLATIONS.get(text_clean, "Unduh Laporan" if "Unduh Report" in text_clean else "Laporan AI")
         return "mixed", expected, ""
 
-    # Check for English UI words when ID locale is active
-    english_words = {
-        "Login", "Sign in", "Log in", "Username", "Password", "Download Report",
-        "Generate Report", "AI Report", "Image Report", "Doctor", "Patient",
-        "Search", "Reset", "Export", "Operation", "Action", "Detail", "Sex", "Age",
-        "Date", "Department", "Language", "Insight", "User", "System"
-    }
-    if text_clean in english_words or any(w in text_clean for w in ("Download Report", "Generate Report", "Image Report")):
-        expected = KNOWN_TRANSLATIONS.get(text_clean, "")
-        return "not-indonesian", expected, ""
+    # Check if text is in KNOWN_TRANSLATIONS
+    if text_clean in KNOWN_TRANSLATIONS:
+        return "not-indonesian", KNOWN_TRANSLATIONS[text_clean], ""
 
-    # Check if text is valid Indonesian (words contained in INDONESIAN_KEYWORDS)
-    words = [w.lower().strip(".,()!*") for w in text_clean.split()]
+    # Broad English UI words vocabulary
+    english_ui_vocab = {
+        "login", "sign", "log", "username", "password", "download", "generate", "report",
+        "image", "doctor", "patient", "search", "reset", "export", "operation", "action",
+        "detail", "sex", "age", "date", "department", "language", "insight", "user", "system",
+        "layout", "window", "leveling", "move", "zoom", "invert", "rotate", "magnifier",
+        "spotlight", "length", "lesion", "contouring", "list", "lung", "mediastinum", "pleura",
+        "rib", "cardiac", "shadow", "abnormal", "cardiothoracic", "ratio", "imaging", "findings",
+        "opinion", "corner", "information", "marking", "scale", "foreign", "objects", "original",
+        "submit", "results", "copy", "previous", "next", "start", "end", "all", "filter", "select", "view"
+    }
+
+    words = [w.lower().strip(".,()!*#") for w in text_clean.split()]
     if words:
+        english_match_count = sum(1 for w in words if w in english_ui_vocab)
+        if (english_match_count / len(words)) >= 0.3:
+            expected = KNOWN_TRANSLATIONS.get(text_clean, "")
+            return "not-indonesian", expected, ""
+
         indonesian_word_count = sum(1 for w in words if w in INDONESIAN_KEYWORDS)
         if (indonesian_word_count / len(words)) >= 0.4:
             return "technical-term", "", ""
