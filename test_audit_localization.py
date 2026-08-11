@@ -140,6 +140,7 @@ class TestAuditLocalizationOffline(unittest.TestCase):
                 route="login",
                 module_name="Authentication",
                 page_url="http://124.225.183.175:8361/#/login",
+                page_title="AI-PACS Login",
                 element_selector="button.login-btn",
                 text_observed="Login",
                 classification="not-indonesian",
@@ -178,6 +179,7 @@ class TestAuditLocalizationOffline(unittest.TestCase):
                 "route",
                 "module_name",
                 "page_url",
+                "page_title",
                 "element_selector",
                 "text_observed",
                 "classification",
@@ -195,9 +197,10 @@ class TestAuditLocalizationOffline(unittest.TestCase):
             self.assertEqual(row2_f[1], "login")
             self.assertEqual(row2_f[2], "Authentication")
             self.assertEqual(row2_f[3], "http://124.225.183.175:8361/#/login")
-            self.assertEqual(row2_f[5], "Login")
-            self.assertEqual(row2_f[6], "not-indonesian")
-            self.assertEqual(row2_f[7], "Masuk")
+            self.assertEqual(row2_f[4], "AI-PACS Login")
+            self.assertEqual(row2_f[6], "Login")
+            self.assertEqual(row2_f[7], "not-indonesian")
+            self.assertEqual(row2_f[8], "Masuk")
 
             # Verify Summary Sheet
             ws_s = wb["Summary"]

@@ -127,6 +127,7 @@ class Finding:
     route: str
     module_name: str
     page_url: str
+    page_title: str
     element_selector: str
     text_observed: str
     classification: str
@@ -322,6 +323,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         "route",
         "module_name",
         "page_url",
+        "page_title",
         "element_selector",
         "text_observed",
         "classification",
@@ -338,15 +340,16 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
     ws_findings.column_dimensions["B"].width = 15  # route
     ws_findings.column_dimensions["C"].width = 22  # module_name
     ws_findings.column_dimensions["D"].width = 45  # page_url
-    ws_findings.column_dimensions["E"].width = 25  # element_selector
-    ws_findings.column_dimensions["F"].width = 30  # text_observed
-    ws_findings.column_dimensions["G"].width = 16  # classification
-    ws_findings.column_dimensions["H"].width = 22  # expected_indonesian
-    ws_findings.column_dimensions["I"].width = 30  # quality_note
-    ws_findings.column_dimensions["J"].width = 25  # screenshot_path
-    ws_findings.column_dimensions["K"].width = 22  # screenshot_image
-    ws_findings.column_dimensions["L"].width = 28  # fullpage_screenshot_path
-    ws_findings.column_dimensions["M"].width = 22  # fullpage_screenshot_image
+    ws_findings.column_dimensions["E"].width = 30  # page_title
+    ws_findings.column_dimensions["F"].width = 25  # element_selector
+    ws_findings.column_dimensions["G"].width = 30  # text_observed
+    ws_findings.column_dimensions["H"].width = 16  # classification
+    ws_findings.column_dimensions["I"].width = 22  # expected_indonesian
+    ws_findings.column_dimensions["J"].width = 30  # quality_note
+    ws_findings.column_dimensions["K"].width = 25  # screenshot_path
+    ws_findings.column_dimensions["L"].width = 22  # screenshot_image
+    ws_findings.column_dimensions["M"].width = 28  # fullpage_screenshot_path
+    ws_findings.column_dimensions["N"].width = 22  # fullpage_screenshot_image
     
     for row_idx, f in enumerate(findings, start=2):
         rel_path = f.screenshot_path
@@ -360,15 +363,16 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
             f.route,
             f.module_name,
             f.page_url,
+            f.page_title,
             f.element_selector,
             f.text_observed,
             f.classification,
             f.expected_indonesian,
             f.quality_note,
             link_formula if rel_path else "",
-            "", # element image placeholder column K
+            "", # element image placeholder column L
             full_link_formula if full_rel_path else "",
-            "", # fullpage image placeholder column M
+            "", # fullpage image placeholder column N
         ])
 
         from openpyxl.drawing.image import Image as OpenPyXLImage
@@ -385,7 +389,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
                         img.width = int(img.width * scale)
                         img.height = int(img.height * scale)
 
-                    img.anchor = f"K{row_idx}"
+                    img.anchor = f"L{row_idx}"
                     ws_findings.add_image(img)
                     ws_findings.row_dimensions[row_idx].height = max(50, int(img.height * 0.75))
                 except Exception:
@@ -403,7 +407,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
                         fp_img.width = int(fp_img.width * fp_scale)
                         fp_img.height = int(fp_img.height * fp_scale)
 
-                    fp_img.anchor = f"M{row_idx}"
+                    fp_img.anchor = f"N{row_idx}"
                     ws_findings.add_image(fp_img)
                     ws_findings.row_dimensions[row_idx].height = max(
                         ws_findings.row_dimensions[row_idx].height or 50,
@@ -606,6 +610,34 @@ class LocalizationAuditor:
 
         self.page.wait_for_timeout(1000)
         current_url = self.page.url
+        current_title = ""
+        try:
+            current_title = self.page.title().strip()
+        except Exception:
+            current_title = ""
+
+        # Audit page title string itself
+        if current_title and len(current_title) >= 2:
+            title_cls, title_exp, title_note = classify_string(current_title)
+            if title_cls != "technical-term":
+                title_key = (route_id, "<title>", current_title)
+                if title_key not in self.seen_keys:
+                    self.seen_keys.add(title_key)
+                    title_fid = generate_finding_id(route_id, "<title>", current_title)
+                    self.findings.append(Finding(
+                        finding_id=title_fid,
+                        route=route_id,
+                        module_name=module_name,
+                        page_url=current_url,
+                        page_title=current_title,
+                        element_selector="<title>",
+                        text_observed=current_title,
+                        classification=title_cls,
+                        expected_indonesian=title_exp,
+                        quality_note=title_note,
+                        screenshot_path="",
+                        fullpage_screenshot_path=f"{self.screenshots_dir.name}/fullpage_{route_id}.png",
+                    ))
 
         elements_data = self.page.evaluate(
             """() => {
@@ -727,6 +759,7 @@ class LocalizationAuditor:
                 route=route_id,
                 module_name=module_name,
                 page_url=current_url,
+                page_title=current_title,
                 element_selector=selector,
                 text_observed=text,
                 classification=classification,
@@ -796,6 +829,78 @@ class LocalizationAuditor:
                     except Exception:
                         pass
 
+    def audit_pdf_reports(self) -> None:
+        """Audits downloadable AI diagnostic PDF reports by parsing text content using pypdf."""
+        reports_dir = Path("reports/downloaded_reports")
+        reports_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            import pypdf
+        except ImportError:
+            return
+
+        # Scan for PDF links or trigger PDF download if button exists
+        pdf_buttons = self.page.locator("button, a").filter(has_text=re.compile(r"(Report|Laporan|PDF)", re.IGNORECASE))
+        btn_count = min(pdf_buttons.count(), 3)
+
+        for i in range(btn_count):
+            try:
+                btn = pdf_buttons.nth(i)
+                if not btn.is_visible():
+                    continue
+
+                btn_text = btn.text_content() or ""
+                # Skip destructive buttons
+                if any(k in btn_text.lower() for k in ("delete", "hapus", "edit", "submit")):
+                    continue
+
+                with self.page.expect_download(timeout=5000) as download_info:
+                    btn.click(timeout=3000)
+
+                download = download_info.value
+                suggested_filename = download.suggested_filename or f"report_{i+1}.pdf"
+                pdf_full_path = reports_dir / suggested_filename
+                download.save_as(str(pdf_full_path))
+
+                # Parse PDF text
+                reader = pypdf.PdfReader(str(pdf_full_path))
+                for page_idx, page in enumerate(reader.pages, start=1):
+                    raw_text = page.extract_text() or ""
+                    for line in raw_text.splitlines():
+                        line_clean = line.strip()
+                        if len(line_clean) < 2:
+                            continue
+
+                        classification, expected, quality_note = classify_string(line_clean)
+                        if classification == "technical-term":
+                            continue
+
+                        route_id = "pdf-report"
+                        selector = f"pdf:page_{page_idx}"
+                        key = (route_id, selector, line_clean)
+                        if key in self.seen_keys:
+                            continue
+
+                        self.seen_keys.add(key)
+                        finding_id = generate_finding_id(route_id, selector, line_clean)
+
+                        self.findings.append(Finding(
+                            finding_id=finding_id,
+                            route=route_id,
+                            module_name="AI Diagnostic Report (PDF)",
+                            page_url=f"file://{pdf_full_path.resolve()}",
+                            page_title=f"PDF Report: {suggested_filename}",
+                            element_selector=selector,
+                            text_observed=line_clean,
+                            classification=classification,
+                            expected_indonesian=expected,
+                            quality_note=quality_note,
+                            screenshot_path="",
+                            fullpage_screenshot_path="",
+                        ))
+            except Exception:
+                continue
+
     def run_audit(self) -> None:
         self.viewer_modal_visited = False
         self.login_if_needed()
@@ -820,6 +925,7 @@ class LocalizationAuditor:
             self.page.goto(dr_viewer_url, wait_until="domcontentloaded")
             self.page.wait_for_timeout(2000)
             self.extract_and_classify_route("dr-viewer-standalone", module_name="Chest DR Intelligent Analysis")
+            self.audit_pdf_reports()
         except Exception as exc:
             print(f"[dr-viewer-standalone] Failed to load standalone viewer page: {exc}")
 

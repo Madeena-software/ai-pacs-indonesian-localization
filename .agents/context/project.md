@@ -51,10 +51,10 @@ OCR is not the default evidence source. DOM text, accessibility text, attributes
 ## Current repository state
 
 **Current state:**  
-`MVP-02 enhanced classification & full-page verified`
+`MVP-02 enhanced with tab titles & PDF report parser & verified`
 
 **Relevant summary:**  
-As of 2026-08-11, `audit_localization.py` includes a PACS medical UI vocabulary dictionary and English phrase classifier. The audit detected **46 untranslated English UI findings** (such as `Free Layout`, `Window Leveling`, `Lesion List`, `Imaging Findings`, `Show Foreign Objects`, etc.) across 5 routes and generated recommended Indonesian translations in `reports/localization_report.xlsx`. All 6 offline unit tests pass.
+As of 2026-08-11, `audit_localization.py` includes browser tab title (`<title>`) auditing and automated PDF diagnostic report text parsing via `pypdf`. In `reports/localization_report.xlsx`, Column E (`page_title`) tracks browser tab titles across all visited routes (`Home - AI-PACS`, `Madeena Intelligent`, etc.) and total findings reached 93. All 6 offline unit tests pass.
 
 ## Intended authority map
 
