@@ -2,7 +2,7 @@
 title: MVP-01 — Build Indonesian Localization Audit Tool (audit_localization.py)
 document_id: TASK-MVP01-LOC-AUDIT-001
 version: 1.0
-status: Remediation Required
+status: Accepted
 language: en-US
 last_updated: 2026-08-11
 authority_note: >
@@ -26,8 +26,11 @@ authority_note: >
 
 **Implementation revision reviewed:** `8e48d62`
 
-**Remediation task revision:** `resolved when republished`
-_(Executor must confirm from `git log --oneline -1 .agents/tasks/mvp01-localization-audit-core.md`.)_
+**Remediation task revision:** `19c224e`
+
+**Accepted implementation revision:** `c1c1c4b`
+
+**Accepted baseline (post-review):** `c1c1c4b`
 
 **Delivery objective:** MVP-01 — Indonesian localization audit baseline
 
