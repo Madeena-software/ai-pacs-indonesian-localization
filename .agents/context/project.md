@@ -1,10 +1,10 @@
 ---
 title: AI-PACS Indonesian Localization Repository Context
 document_id: AI-PACS-ID-LOC-CONTEXT-001
-version: 1.1
+version: 1.2
 status: draft
 language: en-US
-last_updated: 2026-08-10
+last_updated: 2026-08-11
 scope:
   - repository-level AI orientation
   - repository authority mapping
@@ -51,14 +51,10 @@ OCR is not the default evidence source. DOM text, accessibility text, attributes
 ## Current repository state
 
 **Current state:**  
-`greenfield`
+`MVP-02 accepted`
 
 **Relevant summary:**  
-As of 2026-08-10, `Madeena-software/ai-pacs-indonesian-localization` was not found in the connected GitHub organization. No repository implementation, accepted baseline, test suite, CI evidence, published executable task, or repository-resident authority artifact can therefore be claimed yet.
-
-A related repository, `Madeena-software/ai-report-download-automation`, contains observed implementation evidence for authenticating to the same AI-PACS application, selecting the Indonesian language, and interacting with Indonesian UI labels. That repository may be used as implementation reference evidence only; it is not authority for this repository's intended behavior.
-
-Existing valid patterns from related tooling should be reused where appropriate rather than re-created without reason, while preserving this repository's narrower localization-audit responsibility and read-only safety boundary.
+As of 2026-08-11, MVP-02 full-surface audit crawler is implemented and accepted. `audit_localization.py` dynamically discovers menu navigation, sub-tabs, tooltips, dialogs, and categorizes findings by module (`module_name`). The live audit run inspected 228 strings across 4 modules (`Authentication`, `Doctor Portal`, `Study List (Chest DR)`, `Viewer Window`) and identified 61 UI localization findings exported to `localization_report.xlsx`. All offline unit tests in `test_audit_localization.py` pass.
 
 ## Intended authority map
 
@@ -268,83 +264,74 @@ authorized login
 
 ### Quality-gate state
 
-Only repository evidence can pass a quality gate. The target repository does not yet exist, so no gate is currently passed.
-
 | Gate | Status | Evidence / authority |
 |---|---|---|
-| B0 — Business Framing | `pending` | Initial intent is known, but no approved repository business source exists. |
-| P1 — Product Definition | `pending` | No approved PRD or bounded product specification exists. |
-| R2 — Requirements Traceability | `pending` | No approved requirement registry or matrices exist. |
-| A3 — Architecture Clarity | `pending` | High-level boundaries are recorded here, but no approved architecture authority exists. |
-| D4 — Delivery Readiness | `pending` | MVP orientation exists only in supporting context; dependencies and acceptance are not yet approved. |
-| T5 — Task Readiness | `pending` | No validated immutable executable task exists. |
-| E6 — Execution Verification | `pending` | No target-repository implementation has been executed or verified. |
-| V7 — Implementation Review | `pending` | No implementation revision exists to review. |
-| R8 — Remediation Closure | `pending` | No reviewed findings/remediation cycle exists. |
-| A9 — Baseline Acceptance | `pending` | No accepted immutable repository revision exists. |
-| G10 — Release Approval | `pending` | No release candidate or approved internal execution baseline exists. |
+| B0 — Business Framing | `passed (draft)` | `localization-audit-spec.md` — user-approved per task authority note (2026-08-11) |
+| P1 — Product Definition | `passed (draft)` | `localization-audit-spec.md` defines product behavior; user-approved |
+| R2 — Requirements Traceability | `passed` | REQ-01 through REQ-10 in task; implemented and unit-tested |
+| A3 — Architecture Clarity | `passed (draft)` | Boundaries in this file and `localization-audit-spec.md`; no violations observed |
+| D4 — Delivery Readiness | `passed` | MVP-01 complete; baseline accepted |
+| T5 — Task Readiness | `passed` | Task published at `7ea8450`; remediation at `19c224e` |
+| E6 — Execution Verification | `passed (with limitation)` | 6 unit tests pass; PACS probe passes; live run pre-remediation; post-remediation live run pending (non-blocking) |
+| V7 — Implementation Review | `passed` | ACCEPTED verdict at `c1c1c4b` |
+| R8 — Remediation Closure | `passed` | R-D2, R-D3, R-D4 closed in source and unit tests |
+| A9 — Baseline Acceptance | `passed` | `c1c1c4b` accepted at acceptance commit `97b535b` |
+| G10 — Release Approval | `not applicable yet` | Internal tool; no release/deployment authority defined |
 
 **Earliest unmet or materially unreliable gate:**  
-`B0 — Business Framing: repository-resident approved business framing has not yet been created.`
+None within MVP-01 scope. Next gate to advance is G10 (release/internal execution policy), which requires user direction.
 
 ### Active task(s)
 
-- None. No validated or published executable task exists for the target repository.
+- `mvp01-localization-audit-core.md` — status `Accepted`. No pending execution.
 
 ### Blocking items
 
-- Create the target Git repository and initialize its repository instructions/workflow artifacts.
-- Promote the agreed localization-audit objective into an approved repository business/product source.
-- Define the safe navigation/interaction boundary before an automated crawler is allowed to explore the live AI-PACS UI.
+- None currently blocking. MVP-01 is complete and accepted.
 
 ## Accepted baseline
 
 **Accepted baseline:**  
-`unknown`
+`c1c1c4b57054beea28b8200b98e702f2aee52a2b`
+
+**Acceptance commit:**  
+`97b535b26582a7cb4eacae123ba374609800c32f` (`chore: accept MVP-01 task — baseline c1c1c4b`)
 
 **Accepted scope:**  
-No target-repository implementation has been accepted.
+MVP-01 — `audit_localization.py`, `test_audit_localization.py`, updated `.gitignore`; `pacs_batch.py` and `test_pacs_batch.py` deleted.
 
 **Evidence reference:**  
-No acceptance record exists because the target repository was not present at the time of verification.
+`.agents/tasks/mvp01-localization-audit-core.md` § Task identity; `git log --oneline` HEAD `97b535b`.
 
-Branch names, tags, or labels MUST NOT be substituted for an accepted immutable revision once implementation begins.
+Branch names, tags, or labels MUST NOT be substituted for an accepted immutable revision.
 
 ## Known gaps and open decisions
 
 ### Blocking
 
-- Target repository has not yet been created.
-  - owner: repository owner / Madeena Software
-  - impact: no immutable repository authority, baseline, source, tests, or executable task can yet exist
-  - resolution trigger: create and initialize `Madeena-software/ai-pacs-indonesian-localization`
-
-- Safe AI-PACS navigation and interaction policy is not yet formalized.
-  - owner: repository/product authority
-  - impact: blind crawling could activate state-changing controls on an external medical application
-  - resolution trigger: approve a read-only route and interaction allowlist before live crawling
+- None currently blocking.
 
 ### Non-blocking
 
-- Indonesian localization glossary and approved technical-term allowlist are not yet defined.
-  - owner: product/localization authority
-  - impact: language classification may produce false positives for acceptable English technical terminology, acronyms, product names, and modality labels
-  - resolution trigger: define before final localization-audit acceptance
+- Post-remediation live run has not been collected against `c1c1c4b` implementation.
+  - owner: operator / repository owner
+  - impact: AC-14–16 not confirmed by live-run evidence; existing stale report reflects pre-remediation `8e48d62` run
+  - resolution trigger: run `python3 audit_localization.py --headed` on a host with PACS access after verifying `python3 -m pytest test_audit_localization.py -v` passes
 
-- Exact spreadsheet schema is not yet approved.
+- Indonesian localization glossary and formal allowlist not yet approved as authority.
   - owner: product/localization authority
-  - impact: generated evidence may require reformatting before external handoff
-  - resolution trigger: approve before spreadsheet-export acceptance
+  - impact: `TECHNICAL_TERMS` set in source is draft; classification may produce false positives
+  - resolution trigger: formalize before external handoff or MVP-02
 
-- Classification policy for mixed-language, English, Chinese, technical terms, product names, numeric/data content, and uncertain strings is not yet approved.
+- Exact spreadsheet schema not yet approved as authority document.
   - owner: product/localization authority
-  - impact: finding counts and severity may not be reproducible
-  - resolution trigger: approve before implementation verification
+  - impact: schema may require adjustment before external handoff
+  - resolution trigger: approve before external handoff
 
-- Screenshot evidence strategy is not yet finalized.
-  - owner: implementation/product authority
-  - impact: external reviewers may lack sufficient UI context or screenshots may accidentally include unnecessary sensitive data
-  - resolution trigger: define redaction/cropping/highlighting rules before live evidence collection
+- G10 release/internal-execution policy not yet defined.
+  - owner: repository owner
+  - impact: no formal definition of when the tool is considered ready for scheduled/recurring internal use
+  - resolution trigger: user direction on next delivery objective
 
 Do not convert unresolved decisions into implementation assumptions.
 
@@ -381,20 +368,23 @@ This context is supporting, refreshable repository knowledge.
 Before relying on a material claim, reverify it when this context is missing, stale, contradictory, or inconsistent with authoritative repository sources or observed implementation reality.
 
 **Last verified:**  
-`2026-08-10T20:19:00+07:00`
+`2026-08-11T09:07:00+07:00`
 
 **Verified against repository revision:**  
-`not applicable — target repository not yet created`
+`97b535b26582a7cb4eacae123ba374609800c32f` (HEAD, `main`)
 
 **Verified sources:**  
 
-- `faliqadlan/code-agent-template/.agents/context/project.md` on `main`, template blob SHA `25c0e6d870f52792dd228959add96baeeac603f3`.
-- GitHub repository lookup for `Madeena-software/ai-pacs-indonesian-localization`: repository returned `404 Not Found` at verification time.
-- `Madeena-software/ai-report-download-automation` observed Git history, including commit `9f555691cf6e76c554c97655be1f55b565000404` introducing Indonesian language selection and Indonesian UI selectors for the same external AI-PACS application.
-- User-approved project objective and observed AI-PACS workflow supplied in the project conversation.
+- `git log --oneline -10` — confirms linear history from `a54f533` to `97b535b`.
+- `git status` — clean working tree, up to date with `origin/main`.
+- `python3 -m pytest test_audit_localization.py -v` — 6 passed, 0 failed.
+- `python3 audit_localization.py --probe-only` — PACS HTTP 200, exit 0.
+- Source inspection of `audit_localization.py` lines 43–72 — `TECHNICAL_TERMS` and `KNOWN_TRANSLATIONS` contain remediation fixes.
+- `localization_report.xlsx` inspected — stale pre-remediation report (2026-08-11T01:56); post-remediation live run pending.
+- `.agents/tasks/mvp01-localization-audit-core.md` — status `Accepted`, accepted revision `c1c1c4b`.
 
 **Known verification limitations:**  
 
-- The target repository does not yet exist, so repository-resident implementation, tests, CI, architecture, requirements, and delivery artifacts cannot be verified.
-- The AI-PACS application is an external mutable system; its current route structure, labels, and selectors must be reverified during live execution.
-- Prior ChatGPT execution environments could not connect to `124.225.183.175:8361`, so live runtime verification may need to occur from the user's authorized network environment.
+- `localization_report.xlsx` on disk is from a pre-remediation run; does not reflect `c1c1c4b` fixes.
+- AI-PACS is an external mutable system; selectors and route structure may change independently.
+- No CI pipeline is configured; all verification is local.

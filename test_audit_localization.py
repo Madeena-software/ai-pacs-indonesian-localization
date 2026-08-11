@@ -138,6 +138,7 @@ class TestAuditLocalizationOffline(unittest.TestCase):
             Finding(
                 finding_id="1a2b3c4d5e6f7g8h",
                 route="login",
+                module_name="Authentication",
                 element_selector="button.login-btn",
                 text_observed="Login",
                 classification="not-indonesian",
@@ -173,6 +174,7 @@ class TestAuditLocalizationOffline(unittest.TestCase):
             expected_f_headers = [
                 "finding_id",
                 "route",
+                "module_name",
                 "element_selector",
                 "text_observed",
                 "classification",
@@ -185,9 +187,10 @@ class TestAuditLocalizationOffline(unittest.TestCase):
             row2_f = [cell.value for cell in ws_f[2]]
             self.assertEqual(row2_f[0], "1a2b3c4d5e6f7g8h")
             self.assertEqual(row2_f[1], "login")
-            self.assertEqual(row2_f[3], "Login")
-            self.assertEqual(row2_f[4], "not-indonesian")
-            self.assertEqual(row2_f[5], "Masuk")
+            self.assertEqual(row2_f[2], "Authentication")
+            self.assertEqual(row2_f[4], "Login")
+            self.assertEqual(row2_f[5], "not-indonesian")
+            self.assertEqual(row2_f[6], "Masuk")
 
             # Verify Summary Sheet
             ws_s = wb["Summary"]

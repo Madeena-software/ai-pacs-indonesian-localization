@@ -87,6 +87,7 @@ KNOWN_TRANSLATIONS = {
 class Finding:
     finding_id: str
     route: str
+    module_name: str
     element_selector: str
     text_observed: str
     classification: str
@@ -260,6 +261,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
     findings_headers = [
         "finding_id",
         "route",
+        "module_name",
         "element_selector",
         "text_observed",
         "classification",
@@ -273,6 +275,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         ws_findings.append([
             f.finding_id,
             f.route,
+            f.module_name,
             f.element_selector,
             f.text_observed,
             f.classification,
@@ -455,8 +458,25 @@ class LocalizationAuditor:
         self.storage_state.parent.mkdir(parents=True, exist_ok=True)
         self.context.storage_state(path=str(self.storage_state))
 
-    def extract_and_classify_route(self, route_id: str) -> None:
+    def derive_module_name(self, route_id: str) -> str:
+        if route_id == "login":
+            return "Authentication"
+        elif route_id == "doctor":
+            return "Doctor Portal"
+        elif route_id in ("study-list", "userTable"):
+            return "Study List"
+        elif route_id == "viewer-modal":
+            return "Viewer Window"
+        elif "userTable" in route_id:
+            clean = route_id.replace("userTable/", "").replace("%E8%83%B8%E9%83%A8DR", "Chest DR")
+            return f"Study List ({clean})"
+        return route_id.replace("_", " ").replace("-", " ").title()
+
+    def extract_and_classify_route(self, route_id: str, module_name: str | None = None) -> None:
         self.routes_visited.add(route_id)
+        if not module_name:
+            module_name = self.derive_module_name(route_id)
+
         self.page.wait_for_timeout(1000)
 
         elements_data = self.page.evaluate(
@@ -536,7 +556,7 @@ class LocalizationAuditor:
             self.strings_inspected += 1
 
             # Exclude patient data inside td
-            if is_td and route_id == "study-list":
+            if is_td and "study-list" in route_id:
                 continue
 
             classification, expected, quality_note = classify_string(text)
@@ -567,6 +587,7 @@ class LocalizationAuditor:
             self.findings.append(Finding(
                 finding_id=finding_id,
                 route=route_id,
+                module_name=module_name,
                 element_selector=selector,
                 text_observed=text,
                 classification=classification,
@@ -575,21 +596,83 @@ class LocalizationAuditor:
                 screenshot_path=screenshot_rel_path,
             ))
 
+    def discover_and_audit_navigation(self) -> None:
+        """Safely discovers and audits all accessible navigation links and sub-tabs."""
+        # Detect menu links and sub-tabs
+        nav_elements = self.page.evaluate(
+            """() => {
+                const links = [];
+                const selectors = ['.ant-menu-item', '.ant-menu-submenu-title', 'a[href*="#/"]', '.ant-tabs-tab'];
+                const unsafeKeywords = ['delete', 'hapus', 'remove', 'submit', 'kirim', 'save', 'simpan', 'edit', 'ubah', 'download', 'unduh', 'export', 'ekspor', 'logout', 'exit', 'out'];
+                
+                for (const sel of selectors) {
+                    for (const el of document.querySelectorAll(sel)) {
+                        const txt = (el.textContent || '').trim().toLowerCase();
+                        const href = el.getAttribute('href') || '';
+                        
+                        // Safety check: skip mutating/destructive links
+                        if (unsafeKeywords.some(k => txt.includes(k) || href.toLowerCase().includes(k))) {
+                            continue;
+                        }
+                        
+                        links.push({
+                            text: el.textContent.trim(),
+                            href: href,
+                            isTab: el.classList.contains('ant-tabs-tab'),
+                        });
+                    }
+                }
+                return links;
+            }"""
+        )
+
+        for item in nav_elements:
+            text = item.get("text", "").strip()
+            href = item.get("href", "").strip()
+            is_tab = item.get("isTab", False)
+
+            if not text or len(text) < 2:
+                continue
+
+            route_name = text.lower().replace(" ", "-")
+            if is_tab:
+                # Safely click tab if visible
+                try:
+                    tab_loc = self.page.get_by_role("tab", name=text, exact=False).first
+                    if tab_loc and tab_loc.is_visible():
+                        tab_loc.click(timeout=3000)
+                        self.page.wait_for_timeout(800)
+                        self.extract_and_classify_route(f"tab-{route_name}", module_name=f"Tab: {text}")
+                except Exception:
+                    pass
+            elif href and "#/" in href:
+                # Navigate to hash route
+                hash_part = href[href.index("#/"):].strip()
+                if hash_part and hash_part not in ("/login", "#/login"):
+                    try:
+                        self.page.goto(f"{self.base_url}/{hash_part}", wait_until="domcontentloaded")
+                        self.page.wait_for_timeout(800)
+                        self.extract_and_classify_route(f"nav-{route_name}", module_name=f"Navigation: {text}")
+                    except Exception:
+                        pass
+
     def run_audit(self) -> None:
         self.viewer_modal_visited = False
         self.login_if_needed()
 
         # 1. Login route
         self.page.goto(f"{self.base_url}/#/login", wait_until="domcontentloaded")
-        self.extract_and_classify_route("login")
+        self.extract_and_classify_route("login", module_name="Authentication")
 
         # 2. Doctor landing route
         self.page.goto(f"{self.base_url}/{DEFAULT_DOCTOR_HASH}", wait_until="domcontentloaded")
-        self.extract_and_classify_route("doctor")
+        self.extract_and_classify_route("doctor", module_name="Doctor Portal")
+        self.discover_and_audit_navigation()
 
         # 3. Study list route
         self.page.goto(f"{self.base_url}/{DEFAULT_LIST_HASH}", wait_until="domcontentloaded")
-        self.extract_and_classify_route("study-list")
+        self.extract_and_classify_route("study-list", module_name="Study List (Chest DR)")
+        self.discover_and_audit_navigation()
 
         # 4. Viewer modal route (click first visible study row)
         try:
@@ -620,7 +703,7 @@ class LocalizationAuditor:
                 try:
                     visible_row.click(timeout=10000)
                     self.page.wait_for_timeout(1500)
-                    self.extract_and_classify_route("viewer-modal")
+                    self.extract_and_classify_route("viewer-modal", module_name="Viewer Window")
                     self.viewer_modal_visited = True
                 except Exception as exc:
                     print(
