@@ -119,7 +119,7 @@ class TestAuditLocalizationOffline(unittest.TestCase):
         cls, exp, note = classify_string("Language")
         self.assertEqual(cls, "not-indonesian")
         self.assertEqual(exp, "Bahasa")
-        self.assertEqual(note, "")
+        self.assertTrue(len(note) > 0, "quality_note must be populated")
 
     def test_deduplication_keys(self) -> None:
         seen = set()

@@ -49,12 +49,16 @@ TECHNICAL_TERMS = {
 }
 
 KNOWN_TRANSLATIONS = {
+    # Chinese UI strings
     "用户名": "Nama Pengguna",
     "密码": "Kata Sandi",
     "登录": "Masuk",
     "登入": "Masuk",
     "胸部DR": "DR Dada",
     "医生": "Dokter",
+    "影像加载中…": "Memuat gambar…",
+
+    # English & Mixed UI strings
     "Login": "Masuk",
     "Log in": "Masuk",
     "Sign in": "Masuk",
@@ -80,8 +84,20 @@ KNOWN_TRANSLATIONS = {
     "Name": "Nama",
     "Date": "Tanggal",
     "Department": "Departemen",
+    "Anonymous Patient": "Pasien Anonim",
+    "Next Page": "Halaman Berikutnya",
+    "Previous Page": "Halaman Sebelumnya",
+    "20 / page": "20 / halaman",
+    "Go to": "Menuju",
+    "Page Size": "Ukuran Halaman",
+    "Full Screen": "Layar Penuh",
+    "Favorite": "Favorit",
+    "Feedback": "Umpan Balik",
+    "Home - AI-PACS": "Beranda - AI-PACS",
+    "Indonesian": "Bahasa Indonesia",
+    "Disclaimer": "Penafian",
 
-    # Viewer & Medical UI Terms
+    # Medical & Viewer UI Terms
     "Free Layout": "Tata Letak Bebas",
     "Window Leveling": "Leveling Jendela (W/L)",
     "Move": "Pindah",
@@ -102,6 +118,10 @@ KNOWN_TRANSLATIONS = {
     "Cardiac Shadow": "Bayangan Jantung",
     "Abnormal": "Abnormal",
     "Cardiothoracic Ratio": "Rasio Kardiotoraks",
+    "Cardiothoracic ratio is 0.54, please correlate clinically.": "Rasio kardiotoraks adalah 0.54, harap korelasikan secara klinis.",
+    "Cardiothoracic ratio is 0.54.": "Rasio kardiotoraks adalah 0.54.",
+    "Chest DR Intelligent Analysis": "Analisis Intelijen Chest DR",
+    "Insight Chest DR": "Insight Chest DR (Nama Produk)",
     "Imaging Report": "Laporan Pemeriksaan",
     "Imaging Findings": "Temuan Pemeriksaan",
     "Imaging Opinion": "Opini Pemeriksaan",
@@ -118,6 +138,42 @@ KNOWN_TRANSLATIONS = {
     "End date": "Tanggal Selesai",
     "All": "Semua",
     "Filter": "Filter",
+    "Madeena AI-Assisted Diagnosis System": "Sistem Diagnosis Terbantu AI Madeena",
+    "Madeena Intelligent": "Madeena Intelligent",
+    "PT. Madeena Karya Indonesia": "PT. Madeena Karya Indonesia",
+
+    # Already Indonesian / Medical terms
+    "0 item dipilih": "0 item dipilih",
+    "Berhasil": "Berhasil",
+    "Efusi Pleura": "Efusi Pleura",
+    "Ekspor": "Ekspor",
+    "Gagal": "Gagal",
+    "Kelainan Jantung": "Kelainan Jantung",
+    "Lanjutan": "Lanjutan",
+    "Massa/Nodul": "Massa/Nodul",
+    "Negatif": "Negatif",
+    "Pneumonia": "Pneumonia",
+    "Pneumotoraks": "Pneumotoraks",
+    "Positif": "Positif",
+    "Positif atau Negatif": "Positif atau Negatif",
+    "Silakan Masukkan ID/Nama Pasien dan Tekan Enter untuk Mencari": "Silakan Masukkan ID/Nama Pasien dan Tekan Enter untuk Mencari",
+    "Tekan Enter setelah memasukkan ID untuk memulai pencarian.": "Tekan Enter setelah memasukkan ID untuk memulai pencarian.",
+    "Tidak ada kasus ditemukan": "Tidak ada kasus ditemukan",
+    "Total 46 data": "Total 46 data",
+    "WW：65536 WL：32768": "WW: 65536 WL: 32768",
+    "Waktu penerimaan": "Waktu penerimaan",
+    "DR Dada - Platform YiZhun AI-PACS": "DR Dada - Platform YiZhun AI-PACS",
+
+    # UI Icons & Punctuation
+    "calendar": "Ikon Kalender",
+    "caret-down": "Panah Bawah",
+    "caret-up": "Panah Atas",
+    "down": "Bawah",
+    "ellipsis": "Tanda Hubung (Lainnya)",
+    "left": "Kiri",
+    "right": "Kanan",
+    "swap-right": "Panah Kanan",
+    "to": "Sampai",
 }
 
 
@@ -268,20 +324,36 @@ def classify_string(text: str) -> tuple[str, str, str]:
     if text_clean == "Masukan kata sandi":
         return "quality-issue", "Masukkan kata sandi", "Kata kerja imperatif membutuhkan 'Masukkan' bukan 'Masukan'"
 
+    def get_expected_and_note(raw_text: str, default_cls: str) -> tuple[str, str]:
+        exp = KNOWN_TRANSLATIONS.get(raw_text, raw_text)
+        if default_cls == "not-indonesian":
+            if bool(re.search(r"[\u4e00-\u9fff]", raw_text)):
+                note = "Teks masih menggunakan bahasa Mandarin, memerlukan penerjemahan ke bahasa Indonesia."
+            else:
+                note = "Teks masih menggunakan bahasa Inggris, memerlukan penerjemahan ke bahasa Indonesia."
+        elif default_cls == "mixed":
+            note = "Teks menggunakan campuran istilah bahasa Indonesia dan istilah asing."
+        elif default_cls == "quality-issue":
+            note = "Terdapat kesalahan ejaan, tata bahasa, atau penggunaan istilah dalam bahasa Indonesia."
+        else: # uncertain
+            note = "Teks atau elemen UI ini memerlukan verifikasi dan konfirmasi kontekstual oleh tim lokalisasi."
+        return exp, note
+
     # Check for Chinese characters
     has_chinese = bool(re.search(r"[\u4e00-\u9fff]", text_clean))
     if has_chinese:
-        expected = KNOWN_TRANSLATIONS.get(text_clean, "")
-        return "not-indonesian", expected, ""
+        exp, note = get_expected_and_note(text_clean, "not-indonesian")
+        return "not-indonesian", exp, note
 
     # Check for mixed
     if "Unduh Report" in text_clean or "Laporan AI (AI Report)" in text_clean:
-        expected = KNOWN_TRANSLATIONS.get(text_clean, "Unduh Laporan" if "Unduh Report" in text_clean else "Laporan AI")
-        return "mixed", expected, ""
+        exp, note = get_expected_and_note(text_clean, "mixed")
+        return "mixed", exp, note
 
     # Check if text is in KNOWN_TRANSLATIONS
     if text_clean in KNOWN_TRANSLATIONS:
-        return "not-indonesian", KNOWN_TRANSLATIONS[text_clean], ""
+        exp, note = get_expected_and_note(text_clean, "not-indonesian")
+        return "not-indonesian", exp, note
 
     # Broad English UI words vocabulary
     english_ui_vocab = {
@@ -299,14 +371,15 @@ def classify_string(text: str) -> tuple[str, str, str]:
     if words:
         english_match_count = sum(1 for w in words if w in english_ui_vocab)
         if (english_match_count / len(words)) >= 0.3:
-            expected = KNOWN_TRANSLATIONS.get(text_clean, "")
-            return "not-indonesian", expected, ""
+            exp, note = get_expected_and_note(text_clean, "not-indonesian")
+            return "not-indonesian", exp, note
 
         indonesian_word_count = sum(1 for w in words if w in INDONESIAN_KEYWORDS)
         if (indonesian_word_count / len(words)) >= 0.4:
             return "technical-term", "", ""
 
-    return "uncertain", "", ""
+    exp, note = get_expected_and_note(text_clean, "uncertain")
+    return "uncertain", exp, note
 
 
 def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_path: str | Path) -> None:
