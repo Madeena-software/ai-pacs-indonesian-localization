@@ -106,6 +106,12 @@ class TestAuditLocalizationOffline(unittest.TestCase):
         cls, exp, note = classify_string("Masuk")
         self.assertEqual(cls, "technical-term")
 
+        cls, exp, note = classify_string("Waktu penerimaan")
+        self.assertEqual(cls, "technical-term")
+
+        cls, exp, note = classify_string("Tidak ada kasus ditemukan")
+        self.assertEqual(cls, "technical-term")
+
     # --- Remediation AC-13 test cases ---
 
     def test_classify_string_remediation(self) -> None:
@@ -185,9 +191,7 @@ class TestAuditLocalizationOffline(unittest.TestCase):
                 "classification",
                 "expected_indonesian",
                 "quality_note",
-                "screenshot_path",
                 "screenshot_image",
-                "fullpage_screenshot_path",
                 "fullpage_screenshot_image",
             ]
             self.assertEqual(headers_f, expected_f_headers)

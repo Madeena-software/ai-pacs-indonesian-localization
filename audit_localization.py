@@ -45,7 +45,7 @@ TECHNICAL_TERMS = {
     "ID", "Madeena", "UMI", "HTML", "URL", "JSON", "HTTP", "HTTPS", "GB", "MB", "KB",
     "B-MODE", "2D", "3D", "4D",
     # Product names — must not be translated
-    "Insight", "Insight ChestDR", "Insight QCDR",
+    "Insight", "Insight ChestDR", "Insight QCDR", "Insight Chest DR", "YiZhun", "YiZhun AI-PACS",
 }
 
 KNOWN_TRANSLATIONS = {
@@ -95,7 +95,7 @@ KNOWN_TRANSLATIONS = {
     "Feedback": "Umpan Balik",
     "Home - AI-PACS": "Beranda - AI-PACS",
     "Indonesian": "Bahasa Indonesia",
-    "Disclaimer": "Penafian",
+    "Disclaimer": "Pernyataan Batasan Tanggung Jawab",
 
     # Medical & Viewer UI Terms
     "Free Layout": "Tata Letak Bebas",
@@ -287,7 +287,10 @@ INDONESIAN_KEYWORDS = {
     "antrian", "pengarsipan", "komputasi", "pasien", "nama", "stasiun", "pengguna", "kata",
     "sandi", "masuk", "keluar", "batal", "simpan", "cari", "atur", "ulang", "tindakan",
     "rincian", "laporan", "gambar", "hasil", "diagnosis", "pengaturan", "sistem", "dokter",
-    "jenis", "kelamin", "usia", "tanggal", "departemen", "tabel", "daftar", "id", "pemeriksaan"
+    "jenis", "kelamin", "usia", "tanggal", "departemen", "tabel", "daftar", "id", "pemeriksaan",
+    "waktu", "penerimaan", "ditemukan", "kasus", "pilih", "pilihan", "tampilkan", "sembunyikan",
+    "informasi", "detail", "total", "data", "halaman", "menu", "kembali", "buka", "tutup", "bantu",
+    "bantuan", "lihat", "ubah", "hapus", "edit", "beranda", "item", "dipilih", "berhasil", "gagal"
 }
 
 
@@ -301,7 +304,10 @@ def classify_string(text: str) -> tuple[str, str, str]:
         return "technical-term", "", ""
 
     # Icon names or tech identifiers
-    if text_clean in {"eye-invisible", "eye", "lock", "user", "search", "loading", "anticon"}:
+    if text_clean in {
+        "eye-invisible", "eye", "lock", "user", "search", "loading", "anticon",
+        "calendar", "caret-down", "caret-up", "down", "left", "right", "swap-right", "ellipsis"
+    }:
         return "technical-term", "", ""
 
     # Date string
@@ -322,21 +328,21 @@ def classify_string(text: str) -> tuple[str, str, str]:
 
     # Check for quality issue typos
     if text_clean == "Masukan kata sandi":
-        return "quality-issue", "Masukkan kata sandi", "Kata kerja imperatif membutuhkan 'Masukkan' bukan 'Masukan'"
+        return "quality-issue", "Masukkan kata sandi", "Imperative verb requires 'Masukkan' instead of 'Masukan'."
 
     def get_expected_and_note(raw_text: str, default_cls: str) -> tuple[str, str]:
         exp = KNOWN_TRANSLATIONS.get(raw_text, raw_text)
         if default_cls == "not-indonesian":
             if bool(re.search(r"[\u4e00-\u9fff]", raw_text)):
-                note = "Teks masih menggunakan bahasa Mandarin, memerlukan penerjemahan ke bahasa Indonesia."
+                note = "Text is in Chinese and requires translation into Indonesian."
             else:
-                note = "Teks masih menggunakan bahasa Inggris, memerlukan penerjemahan ke bahasa Indonesia."
+                note = "Text is in English and requires translation into Indonesian."
         elif default_cls == "mixed":
-            note = "Teks menggunakan campuran istilah bahasa Indonesia dan istilah asing."
+            note = "Text uses a mix of Indonesian and foreign/English terms."
         elif default_cls == "quality-issue":
-            note = "Terdapat kesalahan ejaan, tata bahasa, atau penggunaan istilah dalam bahasa Indonesia."
+            note = "Imperative verb requires 'Masukkan' instead of 'Masukan'."
         else: # uncertain
-            note = "Teks atau elemen UI ini memerlukan verifikasi dan konfirmasi kontekstual oleh tim lokalisasi."
+            note = "Text or UI element requires contextual verification by the localization team."
         return exp, note
 
     # Check for Chinese characters
@@ -350,10 +356,16 @@ def classify_string(text: str) -> tuple[str, str, str]:
         exp, note = get_expected_and_note(text_clean, "mixed")
         return "mixed", exp, note
 
-    # Check if text is in KNOWN_TRANSLATIONS
+    # Check if text is in KNOWN_TRANSLATIONS or is already an expected Indonesian translation value
     if text_clean in KNOWN_TRANSLATIONS:
+        expected = KNOWN_TRANSLATIONS[text_clean]
+        if expected == text_clean:
+            return "technical-term", "", ""
         exp, note = get_expected_and_note(text_clean, "not-indonesian")
         return "not-indonesian", exp, note
+
+    if text_clean in KNOWN_TRANSLATIONS.values():
+        return "technical-term", "", ""
 
     # Broad English UI words vocabulary
     english_ui_vocab = {
@@ -369,23 +381,27 @@ def classify_string(text: str) -> tuple[str, str, str]:
 
     words = [w.lower().strip(".,()!*#") for w in text_clean.split()]
     if words:
+        indonesian_word_count = sum(1 for w in words if w in INDONESIAN_KEYWORDS)
+        if (indonesian_word_count / len(words)) >= 0.3:
+            return "technical-term", "", ""
+
         english_match_count = sum(1 for w in words if w in english_ui_vocab)
         if (english_match_count / len(words)) >= 0.3:
             exp, note = get_expected_and_note(text_clean, "not-indonesian")
             return "not-indonesian", exp, note
-
-        indonesian_word_count = sum(1 for w in words if w in INDONESIAN_KEYWORDS)
-        if (indonesian_word_count / len(words)) >= 0.4:
-            return "technical-term", "", ""
 
     exp, note = get_expected_and_note(text_clean, "uncertain")
     return "uncertain", exp, note
 
 
 def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_path: str | Path) -> None:
+    from openpyxl.styles import Alignment
+
     wb = openpyxl.Workbook()
     out_file = Path(output_path)
     base_dir = out_file.parent
+
+    wrap_alignment = Alignment(wrap_text=True, vertical="top")
 
     # Sheet 1: Findings
     ws_findings = wb.active
@@ -402,9 +418,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         "classification",
         "expected_indonesian",
         "quality_note",
-        "screenshot_path",
         "screenshot_image",
-        "fullpage_screenshot_path",
         "fullpage_screenshot_image",
     ]
     ws_findings.append(findings_headers)
@@ -415,21 +429,16 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
     ws_findings.column_dimensions["D"].width = 45  # page_url
     ws_findings.column_dimensions["E"].width = 30  # page_title
     ws_findings.column_dimensions["F"].width = 25  # element_selector
-    ws_findings.column_dimensions["G"].width = 30  # text_observed
+    ws_findings.column_dimensions["G"].width = 35  # text_observed
     ws_findings.column_dimensions["H"].width = 16  # classification
-    ws_findings.column_dimensions["I"].width = 22  # expected_indonesian
-    ws_findings.column_dimensions["J"].width = 30  # quality_note
-    ws_findings.column_dimensions["K"].width = 25  # screenshot_path
-    ws_findings.column_dimensions["L"].width = 22  # screenshot_image
-    ws_findings.column_dimensions["M"].width = 28  # fullpage_screenshot_path
-    ws_findings.column_dimensions["N"].width = 22  # fullpage_screenshot_image
+    ws_findings.column_dimensions["I"].width = 25  # expected_indonesian
+    ws_findings.column_dimensions["J"].width = 35  # quality_note
+    ws_findings.column_dimensions["K"].width = 22  # screenshot_image
+    ws_findings.column_dimensions["L"].width = 22  # fullpage_screenshot_image
     
     for row_idx, f in enumerate(findings, start=2):
         rel_path = f.screenshot_path
-        link_formula = f'=HYPERLINK("{rel_path}", "View Screenshot")' if rel_path else ""
-        
         full_rel_path = f.fullpage_screenshot_path
-        full_link_formula = f'=HYPERLINK("{full_rel_path}", "View Full Page")' if full_rel_path else ""
 
         ws_findings.append([
             f.finding_id,
@@ -442,10 +451,8 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
             f.classification,
             f.expected_indonesian,
             f.quality_note,
-            link_formula if rel_path else "",
-            "", # element image placeholder column L
-            full_link_formula if full_rel_path else "",
-            "", # fullpage image placeholder column N
+            "", # element image placeholder column K
+            "", # fullpage image placeholder column L
         ])
 
         from openpyxl.drawing.image import Image as OpenPyXLImage
@@ -462,7 +469,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
                         img.width = int(img.width * scale)
                         img.height = int(img.height * scale)
 
-                    img.anchor = f"L{row_idx}"
+                    img.anchor = f"K{row_idx}"
                     ws_findings.add_image(img)
                     ws_findings.row_dimensions[row_idx].height = max(50, int(img.height * 0.75))
                 except Exception:
@@ -480,7 +487,7 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
                         fp_img.width = int(fp_img.width * fp_scale)
                         fp_img.height = int(fp_img.height * fp_scale)
 
-                    fp_img.anchor = f"N{row_idx}"
+                    fp_img.anchor = f"L{row_idx}"
                     ws_findings.add_image(fp_img)
                     ws_findings.row_dimensions[row_idx].height = max(
                         ws_findings.row_dimensions[row_idx].height or 50,
@@ -488,6 +495,11 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
                     )
                 except Exception:
                     pass
+
+    # Apply wrap_text to all cells in Findings sheet
+    for row in ws_findings.iter_rows():
+        for cell in row:
+            cell.alignment = wrap_alignment
 
     # Sheet 2: Summary
     ws_summary = wb.create_sheet(title="Summary")
@@ -511,10 +523,16 @@ def export_to_excel(findings: list[Finding], summary: dict[str, Any], output_pat
         summary.get("strings_inspected", 0),
         summary.get("findings_total", 0),
         summary.get("findings_not_indonesian", 0),
-    summary.get("findings_quality_issue", 0),
+        summary.get("findings_mixed", 0),
+        summary.get("findings_quality_issue", 0),
         summary.get("findings_uncertain", 0),
         summary.get("viewer_modal_visited", False),
     ])
+
+    # Apply wrap_text to all cells in Summary sheet
+    for row in ws_summary.iter_rows():
+        for cell in row:
+            cell.alignment = wrap_alignment
 
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -799,7 +817,7 @@ class LocalizationAuditor:
             self.strings_inspected += 1
 
             # Exclude patient data inside td
-            if is_td and "study-list" in route_id:
+            if is_td:
                 continue
 
             classification, expected, quality_note = classify_string(text)
