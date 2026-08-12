@@ -56,6 +56,9 @@ class TestAuditLocalizationOffline(unittest.TestCase):
         cls, exp, note = classify_string("PACS")
         self.assertEqual(cls, "technical-term")
 
+        cls, exp, note = classify_string("Window Leveling")
+        self.assertEqual(cls, "technical-term")
+
         cls, exp, note = classify_string("123.45")
         self.assertEqual(cls, "technical-term")
 

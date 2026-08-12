@@ -46,6 +46,8 @@ TECHNICAL_TERMS = {
     "B-MODE", "2D", "3D", "4D",
     # Product names — must not be translated
     "Insight", "Insight ChestDR", "Insight QCDR", "Insight Chest DR", "YiZhun", "YiZhun AI-PACS",
+    # DICOM & Medical Imaging standard technical terms — preserve in English
+    "Window Leveling", "Window Level", "Window Width", "Windowing",
 }
 
 KNOWN_TRANSLATIONS = {
@@ -99,7 +101,7 @@ KNOWN_TRANSLATIONS = {
 
     # Medical & Viewer UI Terms
     "Free Layout": "Tata Letak Bebas",
-    "Window Leveling": "Leveling Jendela (W/L)",
+    "Window Leveling": "Window Leveling",
     "Move": "Pindah",
     "Zoom": "Perbesar",
     "Invert": "Inversi Warna",
